@@ -1,0 +1,149 @@
+<html>
+<head>
+  <title>Person Detection Example</title>
+  <!-- Load the js-objectdetect library -->
+  <script src="js/objectdetect.js"></script>
+  <!-- Declare and initialize a global variable for the classifier -->
+  <script>
+    var classifier = new objectdetect.detector(640, 480, 1.1, objectdetect.eye);
+  </script>
+</head>
+<body>
+  <h1>Person Detection Example</h1>
+  <p>This is a simple website that uses the js-objectdetect library to detect if a person is in the camera.</p>
+  <!-- Create a button element for the start button -->
+  <button id="start-button">Start Detection</button>
+  <!-- Create a video element for the webcam stream -->
+  <video id="video" autoplay></video>
+  <!-- Create a canvas element for the person detection -->
+  <canvas id="canvas"></canvas>
+  <script>
+    // Get the video and canvas elements
+    var video = document.getElementById("video");
+    var canvas = document.getElementById("canvas");
+
+    // Set the canvas size to match the video size
+    canvas.width = 640;
+    canvas.height = 480;
+
+    // Get the canvas context
+    var context = canvas.getContext("2d");
+
+    // Get the start button element
+    var button = document.getElementById("start-button");
+
+    // Add a click event listener to the button
+    button.addEventListener("click", function() {
+      // Query the permission status for the camera and request the permission if needed
+      navigator.permissions.query({name: "camera"})
+        .then(function(permissionStatus) {
+          // If the permission is granted
+          if (permissionStatus.state === "granted") {
+            // Call the function to access the webcam
+            accessWebcam();
+          }
+          // If the permission is denied
+          else if (permissionStatus.state === "denied") {
+            // Log the error
+            console.error("Access to the camera is denied");
+          }
+          // If the permission is prompt
+          else if (permissionStatus.state === "prompt") {
+            // Request the permission
+            navigator.mediaDevices.getUserMedia({video: true})
+              .then(function(stream) {
+                // Call the function to access the webcam
+                accessWebcam();
+              })
+              .catch(function(error) {
+                // Log the error
+                console.error(error);
+              });
+          }
+        })
+        .catch(function(error) {
+          // Log the error
+          console.error(error);
+        });
+    });
+
+    // Define a function to detect a person and draw a rectangle
+    function detectPerson() {
+      // Draw the video frame on the canvas
+      context.drawImage(video, 0, 0, 640, 480);
+
+      // Get the image data from the canvas
+      var imageData = context.getImageData(0, 0, 640, 480);
+
+      // Detect the coordinates of the faces using the global variable classifier
+      var coords = classifier.detect(imageData, 1);
+
+      // Clear the previous rectangle
+      context.clearRect(0, 0, 640, 480);
+
+      // If there are no faces detected
+      if (coords.length === 0) {
+        // Display a message on the canvas
+        context.font = "30px Arial";
+        context.fillStyle = "black";
+        context.fillText("No person detected", 200, 240);
+      }
+      // If there are faces detected
+      else {
+        // Loop through the coordinates
+        for (var i = 0; i < coords.length; i++) {
+          // Get the x, y, width, and height of the current coordinate
+          var x = coords[i][0];
+          var y = coords[i][1];
+          var width = coords[i][2];
+          var height = coords[i][3];
+
+          // Draw a green rectangle around the face
+          context.strokeStyle = "green";
+          context.strokeRect(x, y, width, height);
+        }
+
+        // Display a message on the canvas
+        context.font = "30px Arial";
+        context.fillStyle = "black";
+        context.fillText("Person detected", 200, 240);
+      }
+
+      // Request the next animation frame
+      requestAnimationFrame(detectPerson);
+    }
+
+    // Define a function to access the webcam
+    function accessWebcam() {
+      // Define the constraints for the video stream
+      var constraints = {
+        audio: false,
+        video: {
+          width: 640,
+          height: 480
+        }
+      };
+
+      // Request access to the webcam
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(function(stream) {
+          // Set the video source to the stream
+          video.srcObject = stream;
+
+          // Wait for the video to be ready
+          video.onloadedmetadata = function() {
+            // Play the video
+            video.play();
+
+            // Start the person detection
+            detectPerson();
+          };
+        })
+        .catch(function(error) {
+          // Log the error
+          console.error(error);
+        });
+    }
+  </script>
+</body>
+</html>
