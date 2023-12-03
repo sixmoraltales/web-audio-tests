@@ -1,149 +1,143 @@
 <html>
 <head>
-  <title>Person Detection Example</title>
-  <!-- Load the js-objectdetect library -->
-  <script src="js/objectdetect.js"></script>
-  <!-- Declare and initialize a global variable for the classifier -->
-  <script>
-    var classifier = new objectdetect.detector(640, 480, 1.1, objectdetect.eye);
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 </head>
 <body>
-  <h1>Person Detection Example</h1>
-  <p>This is a simple website that uses the js-objectdetect library to detect if a person is in the camera.</p>
-  <!-- Create a button element for the start button -->
-  <button id="start-button">Start Detection</button>
-  <!-- Create a video element for the webcam stream -->
-  <video id="video" autoplay></video>
-  <!-- Create a canvas element for the person detection -->
-  <canvas id="canvas"></canvas>
+  <h1>Object Detection with TensorFlow.js</h1>
+  <button id="start-button">Start Camera</button>
+  <video id="video" width="640" height="480" autoplay muted></video>
+  <div id="predictions"></div>
   <script>
-    // Get the video and canvas elements
-    var video = document.getElementById("video");
-    var canvas = document.getElementById("canvas");
+    // Get the video element and the start button
+    const video = document.getElementById("video");
+    const startButton = document.getElementById("start-button");
 
-    // Set the canvas size to match the video size
-    canvas.width = 640;
-    canvas.height = 480;
+    // Define variables for audio context
+    let audioContext;
+    
+    // Flags to track detection state of each object type
+    let personDetected = false;
+    let cellphoneDetected = false;
+    let chairDetected = false;
 
-    // Get the canvas context
-    var context = canvas.getContext("2d");
-
-    // Get the start button element
-    var button = document.getElementById("start-button");
-
-    // Add a click event listener to the button
-    button.addEventListener("click", function() {
-      // Query the permission status for the camera and request the permission if needed
-      navigator.permissions.query({name: "camera"})
-        .then(function(permissionStatus) {
-          // If the permission is granted
-          if (permissionStatus.state === "granted") {
-            // Call the function to access the webcam
-            accessWebcam();
-          }
-          // If the permission is denied
-          else if (permissionStatus.state === "denied") {
-            // Log the error
-            console.error("Access to the camera is denied");
-          }
-          // If the permission is prompt
-          else if (permissionStatus.state === "prompt") {
-            // Request the permission
-            navigator.mediaDevices.getUserMedia({video: true})
-              .then(function(stream) {
-                // Call the function to access the webcam
-                accessWebcam();
-              })
-              .catch(function(error) {
-                // Log the error
-                console.error(error);
-              });
-          }
-        })
-        .catch(function(error) {
-          // Log the error
-          console.error(error);
-        });
+    // Load the COCO-SSD model
+    let model;
+    cocoSsd.load().then(loadedModel => {
+      model = loadedModel;
+      console.log("Model loaded");
     });
 
-    // Define a function to detect a person and draw a rectangle
-    function detectPerson() {
-      // Draw the video frame on the canvas
-      context.drawImage(video, 0, 0, 640, 480);
+    // Define a function to start the camera and audio context
+    function startCamera() {
+      // Initialize the audio context
+      audioContext = new AudioContext();
 
-      // Get the image data from the canvas
-      var imageData = context.getImageData(0, 0, 640, 480);
-
-      // Detect the coordinates of the faces using the global variable classifier
-      var coords = classifier.detect(imageData, 1);
-
-      // Clear the previous rectangle
-      context.clearRect(0, 0, 640, 480);
-
-      // If there are no faces detected
-      if (coords.length === 0) {
-        // Display a message on the canvas
-        context.font = "30px Arial";
-        context.fillStyle = "black";
-        context.fillText("No person detected", 200, 240);
-      }
-      // If there are faces detected
-      else {
-        // Loop through the coordinates
-        for (var i = 0; i < coords.length; i++) {
-          // Get the x, y, width, and height of the current coordinate
-          var x = coords[i][0];
-          var y = coords[i][1];
-          var width = coords[i][2];
-          var height = coords[i][3];
-
-          // Draw a green rectangle around the face
-          context.strokeStyle = "green";
-          context.strokeRect(x, y, width, height);
-        }
-
-        // Display a message on the canvas
-        context.font = "30px Arial";
-        context.fillStyle = "black";
-        context.fillText("Person detected", 200, 240);
-      }
-
-      // Request the next animation frame
-      requestAnimationFrame(detectPerson);
-    }
-
-    // Define a function to access the webcam
-    function accessWebcam() {
-      // Define the constraints for the video stream
-      var constraints = {
-        audio: false,
-        video: {
-          width: 640,
-          height: 480
-        }
-      };
-
-      // Request access to the webcam
-      navigator.mediaDevices.getUserMedia(constraints)
-        .then(function(stream) {
+      // Ask for permission to access the camera
+      navigator.mediaDevices.getUserMedia({video: true})
+        .then(stream => {
           // Set the video source to the stream
           video.srcObject = stream;
-
-          // Wait for the video to be ready
-          video.onloadedmetadata = function() {
-            // Play the video
-            video.play();
-
-            // Start the person detection
-            detectPerson();
-          };
+          // Start the video
+          video.play();
+          // Run the object detection every 100 milliseconds
+          setInterval(runDetection, 100);
         })
-        .catch(function(error) {
-          // Log the error
+        .catch(error => {
+          // Handle the error
           console.error(error);
+          alert("Please allow access to the camera");
         });
     }
+
+    // Define a function to play a randomly chosen modal chord
+    function playRandomModalChord() {
+      const modes = [
+        { name: 'Ionian', intervals: [0, 4, 7] }, // Major chord
+        { name: 'Dorian', intervals: [0, 3, 7] },
+        { name: 'Phrygian', intervals: [0, 3, 7] },
+        { name: 'Lydian', intervals: [0, 4, 7] },
+        { name: 'Mixolydian', intervals: [0, 4, 7] },
+        { name: 'Aeolian', intervals: [0, 3, 7] }, // Minor chord
+        { name: 'Locrian', intervals: [0, 3, 6] }
+      ];
+      const rootFrequency = 440; // A4
+      const mode = modes[Math.floor(Math.random() * modes.length)];
+      const chordFrequencies = mode.intervals.map(interval => 
+        rootFrequency * Math.pow(2, interval / 12)
+      );
+
+      // Reduce the gain for each oscillator to avoid distortion
+      const gainValue = 1 / chordFrequencies.length;
+
+      chordFrequencies.forEach(frequency => {
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+        const envelope = audioContext.createGain();
+        envelope.gain.setValueAtTime(0, audioContext.currentTime);
+        envelope.gain.linearRampToValueAtTime(gainValue, audioContext.currentTime + 0.01); // Attack
+        envelope.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1); // Release
+
+        oscillator.connect(envelope);
+        envelope.connect(audioContext.destination);
+
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 1);
+      });
+
+      soundPlayed = true; // Set the flag to true after playing the sound
+    }
+
+    // Define a function to run the object detection
+    function runDetection() {
+      // Check if the model is loaded
+      if (model) {
+        // Detect objects in the video frame
+        model.detect(video)
+          .then(predictions => {
+            // Reset detection flags if no objects are detected
+            if (predictions.length === 0) {
+              personDetected = cellphoneDetected = chairDetected = false;
+            }
+
+            predictions.forEach(prediction => {
+              // Check for new detections and play sound accordingly
+              if (prediction.class === 'person' && !personDetected) {
+                playRandomModalChord();
+                personDetected = true;
+              } else if (prediction.class === 'cell phone' && !cellphoneDetected) {
+                playRandomModalChord();
+                cellphoneDetected = true;
+              } else if (prediction.class === 'chair' && !chairDetected) {
+                playRandomModalChord();
+                chairDetected = true;
+              }
+            });
+
+            // Display the predictions on the webpage
+            displayPredictions(predictions);
+          });
+      }
+    }
+
+    // Define a function to display predictions
+    function displayPredictions(predictions) {
+      // Clear any previous predictions displayed
+      const predictionsContainer = document.getElementById("predictions");
+      predictionsContainer.innerHTML = '';
+
+      // Create elements for each prediction and add to the container
+      predictions.forEach(prediction => {
+        const p = document.createElement("p");
+        p.innerText = `Detected: ${prediction.class} with ${Math.round(prediction.score * 100)}% confidence`;
+        predictionsContainer.appendChild(p);
+      });
+    }
+
+    // Add a click event listener to the start button
+    startButton.addEventListener("click", startCamera);
   </script>
 </body>
 </html>
