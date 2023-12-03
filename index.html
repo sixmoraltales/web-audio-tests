@@ -9,13 +9,22 @@
   <video id="video" width="640" height="480" autoplay muted></video>
   <div id="predictions"></div>
   <script>
+    var dorianChord = [261.63, 329.63, 392, 523.25]; // C Dorian: C min6, F 9
+    var phrygianChord = [261.63, 277.18, 349.23, 415.3]; // C Phrygian: C min, D♭ maj
+    var lydianChord = [261.63, 329.63, 415.3, 493.88]; // C Lydian: C maj7♭5, B -7
+    var mixolydianChord = [261.63, 329.63, 392, 466.16]; // C Mixolydian: C 13, E -7♭5
+
+    // Create an array of modal chords
+    var modalChords = [dorianChord, phrygianChord, lydianChord, mixolydianChord];
+
     // Get the video element and the start button
     const video = document.getElementById("video");
     const startButton = document.getElementById("start-button");
 
     // Define variables for audio context
     let audioContext;
-    
+    var convolver
+
     // Flags to track detection state of each object type
     let personDetected = false;
     let cellphoneDetected = false;
@@ -32,6 +41,29 @@
     function startCamera() {
       // Initialize the audio context
       audioContext = new AudioContext();
+
+      // Create a gain node for the volume
+      var gainNode = audioContext.createGain();
+      gainNode.gain.value = 0.1; // Set the volume to 50%
+
+      // Connect the gain node to the destination (speakers)
+      gainNode.connect(audioContext.destination);
+
+      // Create a convolver node for the reverb effect
+      convolver = audioContext.createConvolver();
+
+      // Fetch the impulse response from the local directory
+      fetch("6 Spaces 06 Scoring Stage  M-to-S.wav")
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          // Set the impulse response to the convolver
+          convolver.buffer = audioBuffer;
+
+          // Connect the convolver to the gain node
+          convolver.connect(gainNode);
+        })
+        .catch(e => console.error(e));
 
       // Ask for permission to access the camera
       navigator.mediaDevices.getUserMedia({video: true})
@@ -51,43 +83,99 @@
     }
 
     // Define a function to play a randomly chosen modal chord
+    // function playRandomModalChord() {
+    //   const modes = [
+    //     { name: 'Ionian', intervals: [0, 4, 7] }, // Major chord
+    //     { name: 'Dorian', intervals: [0, 3, 7] },
+    //     { name: 'Phrygian', intervals: [0, 3, 7] },
+    //     { name: 'Lydian', intervals: [0, 4, 7] },
+    //     { name: 'Mixolydian', intervals: [0, 4, 7] },
+    //     { name: 'Aeolian', intervals: [0, 3, 7] }, // Minor chord
+    //     { name: 'Locrian', intervals: [0, 3, 6] }
+    //   ];
+    //   const rootFrequency = 440; // A4
+    //   const mode = modes[Math.floor(Math.random() * modes.length)];
+    //   const chordFrequencies = mode.intervals.map(interval => 
+    //     rootFrequency * Math.pow(2, interval / 12)
+    //   );
+
+    //   // Reduce the gain for each oscillator to avoid distortion
+    //   const gainValue = 1 / chordFrequencies.length;
+
+    //   chordFrequencies.forEach(frequency => {
+    //     const oscillator = audioContext.createOscillator();
+    //     oscillator.type = 'sine';
+    //     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+    //     const envelope = audioContext.createGain();
+    //     envelope.gain.setValueAtTime(0, audioContext.currentTime);
+    //     envelope.gain.linearRampToValueAtTime(gainValue, audioContext.currentTime + 0.01); // Attack
+    //     envelope.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1); // Release
+
+    //     oscillator.connect(envelope);
+    //     envelope.connect(audioContext.destination);
+
+    //     oscillator.start();
+    //     oscillator.stop(audioContext.currentTime + 1);
+    //   });
+
+    //   soundPlayed = true; // Set the flag to true after playing the sound
+    // }
+
     function playRandomModalChord() {
-      const modes = [
-        { name: 'Ionian', intervals: [0, 4, 7] }, // Major chord
-        { name: 'Dorian', intervals: [0, 3, 7] },
-        { name: 'Phrygian', intervals: [0, 3, 7] },
-        { name: 'Lydian', intervals: [0, 4, 7] },
-        { name: 'Mixolydian', intervals: [0, 4, 7] },
-        { name: 'Aeolian', intervals: [0, 3, 7] }, // Minor chord
-        { name: 'Locrian', intervals: [0, 3, 6] }
-      ];
-      const rootFrequency = 440; // A4
-      const mode = modes[Math.floor(Math.random() * modes.length)];
-      const chordFrequencies = mode.intervals.map(interval => 
-        rootFrequency * Math.pow(2, interval / 12)
-      );
+      // Generate a random number between 0 and 3
+      var randomIndex = Math.floor(Math.random() * 4);
 
-      // Reduce the gain for each oscillator to avoid distortion
-      const gainValue = 1 / chordFrequencies.length;
+      // Select a random modal chord from the array
+      var modalChord = modalChords[randomIndex];
 
-      chordFrequencies.forEach(frequency => {
-        const oscillator = audioContext.createOscillator();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      // Loop through the frequencies of the modal chord
+      for (var i = 0; i < modalChord.length; i++) {
+        // Create a sine wave oscillator for each frequency
+        var oscillator = audioContext.createOscillator();
+        oscillator.type = "sine";
+        oscillator.frequency.value = modalChord[i];
 
-        const envelope = audioContext.createGain();
-        envelope.gain.setValueAtTime(0, audioContext.currentTime);
-        envelope.gain.linearRampToValueAtTime(gainValue, audioContext.currentTime + 0.01); // Attack
-        envelope.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1); // Release
+        // Create a gain node for the envelope
+        var envelope = audioContext.createGain();
+        envelope.gain.value = 0; // Initial volume
 
+        // Connect the oscillator to the envelope
         oscillator.connect(envelope);
-        envelope.connect(audioContext.destination);
 
+        // Connect the envelope to the convolver
+        envelope.connect(convolver);
+
+        // Start the oscillator
         oscillator.start();
-        oscillator.stop(audioContext.currentTime + 1);
-      });
 
-      soundPlayed = true; // Set the flag to true after playing the sound
+        // Create a new time constant for the envelope
+        var now = audioContext.currentTime;
+
+        // Set the envelope parameters
+        var attack = 0.1; // Time to reach maximum volume
+        var decay = 0.2; // Time to reach sustain volume
+        var sustain = 0.5; // Sustain volume level
+        var release = 0.5; // Time to reach zero volume
+
+        // Apply the envelope to the gain node
+        envelope.gain.cancelScheduledValues(now); // Cancel any previous changes
+        envelope.gain.setValueAtTime(0, now); // Set the initial volume to zero
+        envelope.gain.linearRampToValueAtTime(1, now + attack); // Ramp up to maximum volume
+        envelope.gain.linearRampToValueAtTime(sustain, now + attack + decay); // Ramp down to sustain volume
+        envelope.gain.linearRampToValueAtTime(0, now + attack + decay + release); // Ramp down to zero volume
+
+        // Stop the oscillator after the release time
+        oscillator.stop(now + attack + decay + release);
+      }
+
+      // Set the flag to true
+      isPlaying = true;
+
+      // Set a timeout to reset the flag after the release time
+      setTimeout(function() {
+        isPlaying = false;
+      }, (attack + decay + release) * 1000);
     }
 
     // Define a function to run the object detection
