@@ -8,6 +8,7 @@
       padding: 0px;
       --hue1: 176;
       --hue2: 341;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     button {
@@ -15,6 +16,15 @@
         background-color: black;
         color: aliceblue;
         font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .info {
+        color: black;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: x-small;
+        position:fixed;
+        left:0px;
+        bottom:0px;
     }
 
     #container {
@@ -29,7 +39,7 @@
         <!-- <button id="startAnimationBtn">Start</button>
         <button id="stopAnimationBtn">Stop</button> -->
         <button id="start-button">Start Camera</button>
-        <div id="predictions"></div>
+        <div class="info" id="predictions"></div>
       </div>
   <video id="video" width="640" height="480" autoplay muted></video>
   <script>
@@ -86,9 +96,7 @@
       document.body.style.setProperty("--hue2", currentHue2);
 
       latestFrame = requestAnimationFrame(animate);
-      }
-
-      
+      }      
     }
 
     function cancelAnimation() {
