@@ -2,13 +2,100 @@
 <head>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <style>
+    body {
+      margin: 0px;
+      padding: 0px;
+      --hue1: 176;
+      --hue2: 341;
+    }
+
+    #container {
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(50% 50% at 50% 50%, hsl(var(--hue1), 90%, 80%, 1) 0%, hsl(var(--hue2), 90%, 80%, 1) 100%) 50% 50% / 100% 100% no-repeat;
+    }
+  </style>
 </head>
 <body>
-  <h1>Object Detection with TensorFlow.js</h1>
-  <button id="start-button">Start Camera</button>
+    <div id="container">
+        <!-- <button id="startAnimationBtn">Start</button>
+        <button id="stopAnimationBtn">Stop</button> -->
+        <button id="start-button">Start Camera</button>
+        <div id="predictions"></div>
+      </div>
   <video id="video" width="640" height="480" autoplay muted></video>
-  <div id="predictions"></div>
   <script>
+    var startAnimationBtn = document.getElementById("startAnimationBtn");
+    var stopAnimationBtn = document.getElementById("stopAnimationBtn");
+    var newHue1;
+    var newHue2;
+
+    var currentHue1;
+    var currentHue2;
+
+    var hueDiff1;
+    var hueDiff2;
+
+    var incrementer1 = 0;
+    var incrementer2 = 0;
+
+    var counter = 0;
+    var iterations = 400;
+
+    function setNewColor() {
+
+      var bodyStyle = getComputedStyle(document.body);
+
+      currentHue1 = Number(bodyStyle.getPropertyValue("--hue1"));
+      currentHue2 = Number(bodyStyle.getPropertyValue("--hue2"));
+
+      newHue1 = getRandomNumber(0, 360);
+      newHue2 = getRandomNumber(0, 360);
+
+      hueDiff1 = newHue1 - currentHue1;
+      hueDiff2 = newHue2 - currentHue2;
+
+      incrementer1 = hueDiff1 / iterations;
+      incrementer2 = hueDiff2 / iterations;
+    }
+
+    function animate() {
+
+      if (counter == 0) {
+        setNewColor();
+      }
+      
+      counter++;
+
+      currentHue1 += incrementer1;
+      currentHue2 += incrementer2;
+
+      if (counter == iterations) {
+        cancelAnimation;
+        counter = 0;
+      } else {
+        document.body.style.setProperty("--hue1", currentHue1);
+      document.body.style.setProperty("--hue2", currentHue2);
+
+      latestFrame = requestAnimationFrame(animate);
+      }
+
+      
+    }
+
+    function cancelAnimation() {
+        cancelAnimationFrame(latestFrame);
+    }
+
+    function getRandomNumber(low, high) {
+      var r = Math.floor(Math.random() * (high - low + 1)) + low;
+      return r;
+    }
+
+    // startAnimationBtn.addEventListener("click", animate);
+    // stopAnimationBtn.addEventListener("click", cancelAnimation);
+
     var dorianChord = [261.63, 329.63, 392, 523.25]; // C Dorian: C min6, F 9
     var phrygianChord = [261.63, 277.18, 349.23, 415.3]; // C Phrygian: C min, D♭ maj
     var lydianChord = [261.63, 329.63, 415.3, 493.88]; // C Lydian: C maj7♭5, B -7
@@ -193,12 +280,15 @@
             predictions.forEach(prediction => {
               // Check for new detections and play sound accordingly
               if (prediction.class === 'person' && !personDetected) {
+                animate();
                 playRandomModalChord();
                 personDetected = true;
               } else if (prediction.class === 'cell phone' && !cellphoneDetected) {
+                animate();
                 playRandomModalChord();
                 cellphoneDetected = true;
               } else if (prediction.class === 'chair' && !chairDetected) {
+                animate();
                 playRandomModalChord();
                 chairDetected = true;
               }
