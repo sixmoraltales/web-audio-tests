@@ -100,9 +100,6 @@
       return r;
     }
 
-    // startAnimationBtn.addEventListener("click", animate);
-    // stopAnimationBtn.addEventListener("click", cancelAnimation);
-
     var dorianChord = [261.63, 329.63, 392, 523.25]; // C Dorian: C min6, F 9
     var phrygianChord = [261.63, 277.18, 349.23, 415.3]; // C Phrygian: C min, D♭ maj
     var lydianChord = [261.63, 329.63, 415.3, 493.88]; // C Lydian: C maj7♭5, B -7
@@ -175,46 +172,6 @@
           alert("Please allow access to the camera");
         });
     }
-
-    // Define a function to play a randomly chosen modal chord
-    // function playRandomModalChord() {
-    //   const modes = [
-    //     { name: 'Ionian', intervals: [0, 4, 7] }, // Major chord
-    //     { name: 'Dorian', intervals: [0, 3, 7] },
-    //     { name: 'Phrygian', intervals: [0, 3, 7] },
-    //     { name: 'Lydian', intervals: [0, 4, 7] },
-    //     { name: 'Mixolydian', intervals: [0, 4, 7] },
-    //     { name: 'Aeolian', intervals: [0, 3, 7] }, // Minor chord
-    //     { name: 'Locrian', intervals: [0, 3, 6] }
-    //   ];
-    //   const rootFrequency = 440; // A4
-    //   const mode = modes[Math.floor(Math.random() * modes.length)];
-    //   const chordFrequencies = mode.intervals.map(interval => 
-    //     rootFrequency * Math.pow(2, interval / 12)
-    //   );
-
-    //   // Reduce the gain for each oscillator to avoid distortion
-    //   const gainValue = 1 / chordFrequencies.length;
-
-    //   chordFrequencies.forEach(frequency => {
-    //     const oscillator = audioContext.createOscillator();
-    //     oscillator.type = 'sine';
-    //     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-
-    //     const envelope = audioContext.createGain();
-    //     envelope.gain.setValueAtTime(0, audioContext.currentTime);
-    //     envelope.gain.linearRampToValueAtTime(gainValue, audioContext.currentTime + 0.01); // Attack
-    //     envelope.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1); // Release
-
-    //     oscillator.connect(envelope);
-    //     envelope.connect(audioContext.destination);
-
-    //     oscillator.start();
-    //     oscillator.stop(audioContext.currentTime + 1);
-    //   });
-
-    //   soundPlayed = true; // Set the flag to true after playing the sound
-    // }
 
     function playRandomModalChord() {
       // Generate a random number between 0 and 3
