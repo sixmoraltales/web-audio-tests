@@ -122,12 +122,13 @@
 
     // Define variables for audio context
     let audioContext;
-    var convolver
+    var convolver;
 
     // Flags to track detection state of each object type
     let personDetected = false;
     let cellphoneDetected = false;
     let chairDetected = false;
+    let bookDetected = false;
 
     // Load the COCO-SSD model
     let model;
@@ -237,40 +238,102 @@
       }, (attack + decay + release) * 1000);
     }
 
-    // Define a function to run the object detection
-    function runDetection() {
-      // Check if the model is loaded
-      if (model) {
-        // Detect objects in the video frame
-        model.detect(video)
-          .then(predictions => {
-            // Reset detection flags if no objects are detected
-            if (predictions.length === 0) {
-              personDetected = cellphoneDetected = chairDetected = false;
+    // Declare an array to store the detection information
+let detectionInfo = [];
+
+function runDetection() {
+  // Check if the model is loaded
+  if (model) {
+    // Detect objects in the video frame
+    model.detect(video)
+      .then(predictions => {
+        console.log(`Predictions are ${predictions}`);
+        // Reset detection flags if no objects are detected
+        if (predictions.length === 0) {
+          personDetected = cellphoneDetected = chairDetected = bookDetected = false;
+        }
+
+        predictions.forEach(prediction => {
+          // Check for new detections and play sound accordingly
+          if (prediction.class === 'person' && !personDetected) {
+            animate();
+            playRandomModalChord();
+            personDetected = true;
+            // Get the current time in milliseconds
+            let startTime = new Date().getTime();
+            // Add a new entry to the detectionInfo array with the start time and the object class
+            detectionInfo.push({startTime: startTime, class: 'person'});
+          } else if (prediction.class === 'cell phone' && !cellphoneDetected) {
+            animate();
+            playRandomModalChord();
+            cellphoneDetected = true;
+            // Get the current time in milliseconds
+            let startTime = new Date().getTime();
+            // Add a new entry to the detectionInfo array with the start time and the object class
+            detectionInfo.push({startTime: startTime, class: 'cell phone'});
+          } else if (prediction.class === 'chair' && !chairDetected) {
+            animate();
+            playRandomModalChord();
+            chairDetected = true;
+            // Get the current time in milliseconds
+            let startTime = new Date().getTime();
+            // Add a new entry to the detectionInfo array with the start time and the object class
+            detectionInfo.push({startTime: startTime, class: 'chair'});
+          } else if(prediction.class === 'book' && !bookDetected) {
+            animate();
+            playRandomModalChord();
+            bookDetected = true;
+            // Get the current time in milliseconds
+            let startTime = new Date().getTime();
+            // Add a new entry to the detectionInfo array with the start time and the object class
+            detectionInfo.push({startTime: startTime, class: 'book'});
+          }
+        });
+
+        // Display the predictions on the webpage
+        displayPredictions(predictions);
+
+        // Loop through the detectionInfo array and check if any detection has ended
+        for (let i = 0; i < detectionInfo.length; i++) {
+          // Get the current object class and start time
+          let objectClass = detectionInfo[i].class;
+          let startTime = detectionInfo[i].startTime;
+          // Check if the object is still detected in the predictions array
+          let stillDetected = predictions.some(prediction => prediction.class === objectClass);
+          // If the object is not detected anymore, get the end time and calculate the duration
+          if (!stillDetected) {
+            // Get the current time in milliseconds
+            let endTime = new Date().getTime();
+            // Calculate the duration in seconds
+            let duration = (endTime - startTime) / 1000;
+            // Log the detection information to the console
+            console.log(`Object ${objectClass} was detected from ${startTime} to ${endTime}, for ${duration} seconds`);
+            // Remove the entry from the detectionInfo array
+            detectionInfo.splice(i, 1);
+            // Decrement the index to avoid skipping the next entry
+            i--;
+            // Set object classDetection flag to false
+            switch (objectClass) {
+                case 'person':
+                    personDetected = false;
+                    break;
+                case 'cell phone':
+                    cellphoneDetected = false;
+                    break;
+                case 'chair':
+                    chairDetected = false;
+                    break;
+                case 'book':
+                    bookDetected = false;
+                    break;
+                default: 
+                    console.log("unknown object detection ended");
             }
-
-            predictions.forEach(prediction => {
-              // Check for new detections and play sound accordingly
-              if (prediction.class === 'person' && !personDetected) {
-                animate();
-                playRandomModalChord();
-                personDetected = true;
-              } else if (prediction.class === 'cell phone' && !cellphoneDetected) {
-                animate();
-                playRandomModalChord();
-                cellphoneDetected = true;
-              } else if (prediction.class === 'chair' && !chairDetected) {
-                animate();
-                playRandomModalChord();
-                chairDetected = true;
-              }
-            });
-
-            // Display the predictions on the webpage
-            displayPredictions(predictions);
-          });
-      }
-    }
+          }
+        }
+      });
+  }
+}
 
     // Define a function to display predictions
     function displayPredictions(predictions) {
