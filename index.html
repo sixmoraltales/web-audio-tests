@@ -2,6 +2,7 @@
 <head>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <audio src="chorus-piano.mp3"></audio>
   <style>
     body {
       margin: 0px;
@@ -92,7 +93,7 @@
         cancelAnimation;
         counter = 0;
       } else {
-        document.body.style.setProperty("--hue1", currentHue1);
+      document.body.style.setProperty("--hue1", currentHue1);
       document.body.style.setProperty("--hue2", currentHue2);
 
       latestFrame = requestAnimationFrame(animate);
@@ -123,6 +124,7 @@
     // Define variables for audio context
     let audioContext;
     var convolver;
+    var chorusPiano;
 
     // Flags to track detection state of each object type
     let personDetected = false;
@@ -159,7 +161,6 @@
         .then(audioBuffer => {
           // Set the impulse response to the convolver
           convolver.buffer = audioBuffer;
-
           // Connect the convolver to the gain node
           convolver.connect(gainNode);
         })
@@ -180,6 +181,24 @@
           console.error(error);
           alert("Please allow access to the camera");
         });
+    }
+
+    function playAudioBuffer(context, buffer) {
+        // Fetch the audio file from a URL
+        fetch("chorus-piano.mp3")
+        .then(response => response.arrayBuffer()) // Convert the response to an array buffer
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer)) // Decode the array buffer into an audio buffer
+        .then(audioBuffer => {
+            // Create a new AudioBufferSourceNode
+            chorusPiano = audioContext.createBufferSource();
+            // Set the buffer property to the audio buffer
+            chorusPiano.buffer = audioBuffer;
+            // Connect the source to the destination
+            chorusPiano.connect(convolver);
+            // Start the source
+            chorusPiano.start();
+        })
+        .catch(error => console.error(error)); // Handle any errors
     }
 
     function playRandomModalChord() {
@@ -238,6 +257,72 @@
       }, (attack + decay + release) * 1000);
     }
 
+    async function playDelayedOsc() {
+      const timer = ms => new Promise(res => setTimeout(res, ms))
+      // Generate a random number between 0 and 3
+      var randomIndex = Math.floor(Math.random() * 4);
+      
+
+      // Select a random modal chord from the array
+      var modalChord = modalChords[randomIndex];
+
+      // Loop through the frequencies of the modal chord
+      for (var i = 0; i < modalChord.length; i++) {
+        
+        // Create a sine wave oscillator for each frequency
+        var oscillator = audioContext.createOscillator();
+        oscillator.type = "sine";
+        oscillator.frequency.value = modalChord[i];
+
+        // Create a gain node for the envelope
+        var envelope = audioContext.createGain();
+        envelope.gain.value = 0; // Initial volume
+
+        // Connect the oscillator to the envelope
+        oscillator.connect(envelope);
+
+        // Connect the envelope to the convolver
+        envelope.connect(convolver);
+
+        // Start the oscillator
+        oscillator.start();
+
+        // Create a new time constant for the envelope
+        var now = audioContext.currentTime;
+
+        // Set the envelope parameters
+        var attack = 0.1; // Time to reach maximum volume
+        var decay = 0.2; // Time to reach sustain volume
+        var sustain = 0.5; // Sustain volume level
+        var release = 0.5; // Time to reach zero volume
+
+        // Apply the envelope to the gain node
+        envelope.gain.cancelScheduledValues(now); // Cancel any previous changes
+        envelope.gain.setValueAtTime(0, now); // Set the initial volume to zero
+        envelope.gain.linearRampToValueAtTime(1, now + attack); // Ramp up to maximum volume
+        envelope.gain.linearRampToValueAtTime(sustain, now + attack + decay); // Ramp down to sustain volume
+        envelope.gain.linearRampToValueAtTime(0, now + attack + decay + release); // Ramp down to zero volume
+
+        // Stop the oscillator after the release time
+        oscillator.stop(now + attack + decay + release);
+        console.log("note played");
+      await timer(Math.random() * 100);
+      }
+
+      // Set the flag to true
+      isPlaying = true;
+
+      // Set a timeout to reset the flag after the release time
+      setTimeout(function() {
+        isPlaying = false;
+      }, (attack + decay + release) * 2000);
+      
+    }
+
+    function playRandomDelayedModalChord() {
+      playDelayedOsc();
+    }
+
     // Declare an array to store the detection information
 let detectionInfo = [];
 
@@ -247,7 +332,7 @@ function runDetection() {
     // Detect objects in the video frame
     model.detect(video)
       .then(predictions => {
-        console.log(`Predictions are ${predictions}`);
+        //console.log(`Predictions are ${predictions}`);
         // Reset detection flags if no objects are detected
         if (predictions.length === 0) {
           personDetected = cellphoneDetected = chairDetected = bookDetected = false;
@@ -257,7 +342,10 @@ function runDetection() {
           // Check for new detections and play sound accordingly
           if (prediction.class === 'person' && !personDetected) {
             animate();
-            playRandomModalChord();
+            //playRandomModalChord();
+            //chorusPiano.start();
+            //playAudioBuffer(audioContext, chorusPiano)
+            playRandomDelayedModalChord();
             personDetected = true;
             // Get the current time in milliseconds
             let startTime = new Date().getTime();
@@ -265,7 +353,8 @@ function runDetection() {
             detectionInfo.push({startTime: startTime, class: 'person'});
           } else if (prediction.class === 'cell phone' && !cellphoneDetected) {
             animate();
-            playRandomModalChord();
+            playRandomDelayedModalChord();
+            //playRandomModalChord();
             cellphoneDetected = true;
             // Get the current time in milliseconds
             let startTime = new Date().getTime();
@@ -273,7 +362,8 @@ function runDetection() {
             detectionInfo.push({startTime: startTime, class: 'cell phone'});
           } else if (prediction.class === 'chair' && !chairDetected) {
             animate();
-            playRandomModalChord();
+            //playRandomModalChord();
+            playRandomDelayedModalChord();
             chairDetected = true;
             // Get the current time in milliseconds
             let startTime = new Date().getTime();
@@ -281,7 +371,8 @@ function runDetection() {
             detectionInfo.push({startTime: startTime, class: 'chair'});
           } else if(prediction.class === 'book' && !bookDetected) {
             animate();
-            playRandomModalChord();
+            //playRandomModalChord();
+            playRandomDelayedModalChord();
             bookDetected = true;
             // Get the current time in milliseconds
             let startTime = new Date().getTime();
