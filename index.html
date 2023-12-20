@@ -109,6 +109,15 @@
       return r;
     }
 
+    var eminor = [329.63, 392.00, 493.88];
+    var fsharpdim = [369.99, 440.00, 261.63];
+    var gmaj = [392.00, 493.88, 293.66];
+    var amin = [440.00, 523.25, 659.25];
+    var bmin = [493.88, 587.33, 739.99];
+    var cmaj = [329.63, 415.30, 493.88];
+    var dmaj = [293.66, 369.99, 440.00];
+
+
     var dorianChord = [261.63, 329.63, 392, 523.25]; // C Dorian: C min6, F 9
     var phrygianChord = [261.63, 277.18, 349.23, 415.3]; // C Phrygian: C min, D♭ maj
     var lydianChord = [261.63, 329.63, 415.3, 493.88]; // C Lydian: C maj7♭5, B -7
@@ -116,6 +125,7 @@
 
     // Create an array of modal chords
     var modalChords = [dorianChord, phrygianChord, lydianChord, mixolydianChord];
+    var eminorChords = [eminor, fsharpdim, gmaj, amin, bmin, cmaj, dmaj];
 
     // Get the video element and the start button
     const video = document.getElementById("video");
@@ -264,15 +274,15 @@
       
 
       // Select a random modal chord from the array
-      var modalChord = modalChords[randomIndex];
+      var chords = eminorChords[randomIndex];
 
       // Loop through the frequencies of the modal chord
-      for (var i = 0; i < modalChord.length; i++) {
+      for (var i = 0; i < chords.length; i++) {
         
         // Create a sine wave oscillator for each frequency
         var oscillator = audioContext.createOscillator();
         oscillator.type = "sine";
-        oscillator.frequency.value = modalChord[i];
+        oscillator.frequency.value = chords[i];
 
         // Create a gain node for the envelope
         var envelope = audioContext.createGain();
